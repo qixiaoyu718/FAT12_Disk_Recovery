@@ -52,6 +52,8 @@ typedef struct File {
 	unsigned char *lastModDate;
 	unsigned char *firstLogCluster; 
 	unsigned char *fileSize; 		//(in Bytes)
+	char *filepath;
+	int isValid;
 } File;
 
 /* Global Variables */
@@ -84,11 +86,31 @@ int rootDirectorySize = 16;
 			}
 		}
 
+
+	/* Function: getFileSize    */
+		uint32_t getFileSize(unsigned char *hex){
+			uint32_t first, second, third, fourth;
+			uint32_t result;
+			
+			first = (uint32_t) hex[0];
+			second = ((uint32_t) hex[1]) << 8u;
+			third = ((uint32_t) hex[2]) << 16u;
+			fourth = ((uint32_t) hex[3]) << 24u;
+			result = first | second | third | fourth;
+			return result;
+		}
+
 	/* Function: printFile      */
 		//Purpose: Print formatted file information to stdout
 		void printFile(File *file){
 			assert(file != NULL);
+			printf("FILE\t");
 			assert(file->filename != NULL);
+			if(file->isValid){
+				printf("NORMAL\t");
+			} else {
+				printf("DELETED\t");
+			}
 			int i = 0;
 			while(file->filename[i] != ' ' && file->filename[i] != '.' && i < 8){
 				printf("%c", file->filename[i]);
@@ -102,13 +124,11 @@ int rootDirectorySize = 16;
 				i++;
 			}
 			printf("\t");
-			assert(file->fileSize);
-			i = 0;
-			while(file->fileSize[i] != '.' && i < 4){
-				printf("%c", file->fileSize[i]);
-				i++;
-			}
+			assert(file->fileSize != NULL);
+			printf("%d", getFileSize(file->fileSize));
+
 			printf("\n");
+			
 		}
 
 	/* Function: getValidFiles  */
@@ -118,8 +138,15 @@ int rootDirectorySize = 16;
 			int currentInd = 0;
 			while((currentInd + DIR_ENTR_SIZE) <= ROOT_SIZE){
 				int startingIndex = currentInd;
-				if((229 != rootDirectory[currentInd]) && (rootDirectory[currentInd] != 0)){
+				if(rootDirectory[currentInd] != 0x00){
 					File *nextFile = malloc(sizeof(File));
+					//Check if the file is valid
+					if(0xE5 != rootDirectory[currentInd]){
+						nextFile->isValid = 1;
+					} else {
+						nextFile->isValid = 0;
+					}
+
 					//Read in filename-------------------------------------------
 					assert((currentInd - startingIndex) == 0);
 					nextFile->filename = (unsigned char *)malloc(8 * sizeof(char));
@@ -194,7 +221,7 @@ int rootDirectorySize = 16;
 					assert((currentInd - startingIndex) == 26);
 					nextFile->firstLogCluster = (unsigned char *)malloc(2 * sizeof(char));
 					for(int i = 0; i < 2; i++){
-						nextFile->reserved[i] = rootDirectory[currentInd+i];
+						nextFile->firstLogCluster[i] = rootDirectory[currentInd+i];
 					}
 					currentInd += 2;
 
@@ -202,12 +229,21 @@ int rootDirectorySize = 16;
 					assert((currentInd - startingIndex) == 28);
 					nextFile->fileSize = (unsigned char *)malloc(4 * sizeof(char));
 					for(int i = 0; i < 4; i++){
-						nextFile->reserved[i] = rootDirectory[currentInd+i];
+						nextFile->fileSize[i] = rootDirectory[currentInd+i];
 					}
 					currentInd += 4;
 
-					printFile(nextFile);
-					//addRootFile(nextFile);
+					nextFile->filepath = (char *) malloc(sizeof(char));
+					nextFile->filepath = "/";
+
+					//If file isn't a subdirectory, print it
+						//else add it
+					if(nextFile->extension[0] != ' '){
+						printFile(nextFile);
+						//addRootFile(nextFile);
+					} else {
+
+					}
 				} else {
 					currentInd += 32;
 				}
@@ -303,7 +339,7 @@ int rootDirectorySize = 16;
 		}
 
 /* Removeable Debug Functions */
-	/* Check Contents              */
+	/* Check Contents           */
 		// void checkContents(){
 		// 	 printf("\n\nBoot\n");
 		// 	for(int i = 0; i < 10; i++){
