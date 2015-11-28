@@ -86,21 +86,18 @@ int rootDirectorySize = 16;
 			}
 		}
 
-
-	/* Function: getFileSize    */
-		uint32_t getFileSize(unsigned char *hex){
-			uint32_t first, second, third, fourth;
-			uint32_t result;
-			
-			first = (uint32_t) hex[0];
-			second = ((uint32_t) hex[1]) << 8u;
-			third = ((uint32_t) hex[2]) << 16u;
-			fourth = ((uint32_t) hex[3]) << 24u;
-			result = first | second | third | fourth;
+	/* Function: convertEndian */
+		//Purpose: Converts a unsigned char *hex in little endian to uint32_t in big endian
+		uint32_t convertEndian(unsigned char *hex, int numBytes){
+			uint32_t result = 0;
+			for(int i = 0; i < numBytes; i++){
+				uint32_t temp = ((uint32_t) hex[i]) << (unsigned) (8 * i);
+				result = result | temp;
+			}
 			return result;
 		}
 
-	/* Function: printFile      */
+	/* Function: printFile     */
 		//Purpose: Print formatted file information to stdout
 		void printFile(File *file){
 			assert(file != NULL);
@@ -125,7 +122,7 @@ int rootDirectorySize = 16;
 			}
 			printf("\t");
 			assert(file->fileSize != NULL);
-			printf("%d", getFileSize(file->fileSize));
+			printf("%d", convertEndian(file->fileSize, 4));
 
 			printf("\n");
 			
