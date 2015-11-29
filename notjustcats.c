@@ -63,27 +63,15 @@ uint16_t *fat2[FAT_ENTRIES];
 unsigned char rootDirectory[ROOT_SIZE];
 unsigned char data[DATA_SIZE];
 
-File **rootFiles;
-int numRootFiles = 0;
-int rootDirectorySize = 16;
+char *destPath;
 
 
 
-/* Helper Functions */
-	/* Function printRoot       */
+/* Helper Functions======================================================================*/
 
-	/* Function: addRootFile    */
-		//Purpose: Adds a root file to the data structure to hold
-		void addRootFile(File *file){
-			assert(file != NULL);
-			if(numRootFiles < rootDirectorySize){
-				rootFiles[numRootFiles] = file;
-				numRootFiles++;
-			} else {
-				//rootFiles = (File **) realloc(rootFiles, (rootDirectorySize + 16));
-				rootFiles[numRootFiles] = file;
-				numRootFiles++;
-			}
+	/* Function: getSector      */
+		uint16_t getSector(uint16_t fatEntry){
+			return (uint16_t)(33 + fatEntry - 2);
 		}
 
 	/* Function: convertEndian */
@@ -108,6 +96,8 @@ int rootDirectorySize = 16;
 			} else {
 				printf("DELETED\t");
 			}
+			assert(file->filepath != NULL);
+			printf("%s", file->filepath);
 			int i = 0;
 			while(file->filename[i] != ' ' && file->filename[i] != '.' && i < 8){
 				printf("%c", file->filename[i]);
@@ -125,125 +115,156 @@ int rootDirectorySize = 16;
 			printf("%d", convertEndian(file->fileSize, 4));
 
 			printf("\n");
-			
 		}
 
-	/* Function: getValidFiles  */
-		void getValidFiles(){
+/*	Exploration Functions==================================================================*/
+	/* Function: createFile    */
+		File *createFile(char *raw, char *filepath){
+			File *nextFile = malloc(sizeof(File));
+			int currentInd = 0;
+
+			//Check if the file is valid
+			if(0xE5 != raw[currentInd]){
+				nextFile->isValid = 1;
+			} else {
+				nextFile->isValid = 0;
+			}
+
+			//Read in filename-------------------------------------------
+			assert(currentInd == 0);
+			nextFile->filename = (unsigned char *)malloc(8 * sizeof(char));
+			for(int i = 0; i < 8; i++){
+				nextFile->filename[i] = raw[currentInd+i];
+			}
+			currentInd += 8;
+
+			//Read in extension------------------------------------------
+			assert(currentInd == 8);
+			nextFile->extension = (unsigned char *)malloc(3 * sizeof(char));
+			for(int i = 0; i < 3; i++){
+				nextFile->extension[i] = raw[currentInd+i];
+			}
+			currentInd += 3;
+
+			//Read in attributes-----------------------------------------
+			assert(currentInd == 11);
+			nextFile->attributes = (unsigned char *)malloc(1 * sizeof(char));
+			nextFile->attributes[0] = raw[currentInd];
+			currentInd++;
+
+			//Read in reserved-------------------------------------------
+			assert(currentInd == 12);
+			nextFile->reserved = (unsigned char *)malloc(2 * sizeof(char));
+			for(int i = 0; i < 2; i++){
+				nextFile->reserved[i] = raw[currentInd+i];
+			}
+			currentInd += 2;
+
+			//Read in creationTime---------------------------------------
+			assert(currentInd  == 14);
+			nextFile->creationTime = (unsigned char *)malloc(2 * sizeof(char));
+			for(int i = 0; i < 2; i++){
+				nextFile->creationTime[i] = raw[currentInd+i];
+			}
+			currentInd += 2;
+
+			//Read in creationDate---------------------------------------
+			assert(currentInd == 16);
+			nextFile->creationDate = (unsigned char *)malloc(2 * sizeof(char));
+			for(int i = 0; i < 2; i++){
+				nextFile->creationDate[i] = raw[currentInd+i];
+			}
+			currentInd += 2;
+
+			//Read in lastAccessed info----------------------------------
+			assert(currentInd == 18);
+			nextFile->lastAccessed = (unsigned char *)malloc(2 * sizeof(char));
+			for(int i = 0; i < 2; i++){
+				nextFile->lastAccessed[i] = raw[currentInd+i];
+			}
+			currentInd += 4;
+
+			//Read in lastModified Time----------------------------------
+			assert(currentInd == 22);
+			nextFile->lastModTime = (unsigned char *)malloc(2 * sizeof(char));
+			for(int i = 0; i < 2; i++){
+				nextFile->lastModTime[i] = raw[currentInd+i];
+			}
+			currentInd += 2;
+
+			//Read in lastModified Date-------------------------------------------
+			assert(currentInd  == 24);
+			nextFile->lastModDate = (unsigned char *)malloc(2 * sizeof(char));
+			for(int i = 0; i < 2; i++){
+				nextFile->lastModDate[i] = raw[currentInd+i];
+			}
+			currentInd += 2;
+
+			//Read in first logical cluster---------------------------------------
+			assert(currentInd == 26);
+			nextFile->firstLogCluster = (unsigned char *)malloc(2 * sizeof(char));
+			for(int i = 0; i < 2; i++){
+				nextFile->firstLogCluster[i] = raw[currentInd+i];
+			}
+			currentInd += 2;
+
+			//Read in file size---------------------------------------------------
+			assert(currentInd == 28);
+			nextFile->fileSize = (unsigned char *)malloc(4 * sizeof(char));
+			for(int i = 0; i < 4; i++){
+				nextFile->fileSize[i] = raw[currentInd+i];
+			}
+			currentInd += 4;
+
+			nextFile->filepath = (char *) malloc(strlen(filepath));
+			for(int i = 0; i < strlen(filepath); i++){
+				nextFile->filepath[i] = filepath[i];
+			}
+
+			return nextFile;
+		}
+
+	/* Function: exploreFile   */
+		//Purpose: Finds the file's contents and saves it to the user's specified directory
+		void exploreFile(File *file){
+
+		}
+
+	/* Function: exploreDirectory */
+		//Purpose: Explores a subdirectory for files contained within
+		void exploreDirectory(File *file){
+
+		}
+
+	/* Function: exploreRoot  */
+		void exploreRoot(){
 			assert(rootDirectory != NULL);
 
 			int currentInd = 0;
 			while((currentInd + DIR_ENTR_SIZE) <= ROOT_SIZE){
-				int startingIndex = currentInd;
 				if(rootDirectory[currentInd] != 0x00){
-					File *nextFile = malloc(sizeof(File));
-					//Check if the file is valid
-					if(0xE5 != rootDirectory[currentInd]){
-						nextFile->isValid = 1;
-					} else {
-						nextFile->isValid = 0;
+					char *rawData =(char *) malloc(DIR_ENTR_SIZE * sizeof(char));
+					for(int i = 0; i <  DIR_ENTR_SIZE; i++){
+						rawData[i] = rootDirectory[currentInd];
+						currentInd++;
 					}
 
-					//Read in filename-------------------------------------------
-					assert((currentInd - startingIndex) == 0);
-					nextFile->filename = (unsigned char *)malloc(8 * sizeof(char));
-					for(int i = 0; i < 8; i++){
-						nextFile->filename[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 8;
+					char *filepath = (char *) malloc(sizeof(char));
+					filepath = "/";
 
-					//Read in extension------------------------------------------
-					assert((currentInd - startingIndex) == 8);
-					nextFile->extension = (unsigned char *)malloc(3 * sizeof(char));
-					for(int i = 0; i < 3; i++){
-						nextFile->extension[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 3;
+					File *nextFile = createFile(rawData, filepath);
+					assert(nextFile != NULL);
 
-					//Read in attributes-----------------------------------------
-					assert((currentInd - startingIndex) == 11);
-					nextFile->attributes = (unsigned char *)malloc(1 * sizeof(char));
-					nextFile->attributes[0] = rootDirectory[currentInd];
-					currentInd++;
-
-					//Read in reserved-------------------------------------------
-					assert((currentInd - startingIndex) == 12);
-					nextFile->reserved = (unsigned char *)malloc(2 * sizeof(char));
-					for(int i = 0; i < 2; i++){
-						nextFile->reserved[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 2;
-
-					//Read in creationTime---------------------------------------
-					assert((currentInd - startingIndex) == 14);
-					nextFile->creationTime = (unsigned char *)malloc(2 * sizeof(char));
-					for(int i = 0; i < 2; i++){
-						nextFile->creationTime[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 2;
-
-					//Read in creationDate---------------------------------------
-					assert((currentInd - startingIndex) == 16);
-					nextFile->creationDate = (unsigned char *)malloc(2 * sizeof(char));
-					for(int i = 0; i < 2; i++){
-						nextFile->creationDate[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 2;
-
-					//Read in lastAccessed info----------------------------------
-					assert((currentInd - startingIndex) == 18);
-					nextFile->lastAccessed = (unsigned char *)malloc(2 * sizeof(char));
-					for(int i = 0; i < 2; i++){
-						nextFile->lastAccessed[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 4;
-
-					//Read in lastModified Time----------------------------------
-					assert((currentInd - startingIndex) == 22);
-					nextFile->lastModTime = (unsigned char *)malloc(2 * sizeof(char));
-					for(int i = 0; i < 2; i++){
-						nextFile->lastModTime[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 2;
-
-					//Read in lastModified Date----------------------------------
-					assert((currentInd - startingIndex) == 24);
-					nextFile->lastModDate = (unsigned char *)malloc(2 * sizeof(char));
-					for(int i = 0; i < 2; i++){
-						nextFile->lastModDate[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 2;
-
-					//Read in first logical cluster------------------------------
-					assert((currentInd - startingIndex) == 26);
-					nextFile->firstLogCluster = (unsigned char *)malloc(2 * sizeof(char));
-					for(int i = 0; i < 2; i++){
-						nextFile->firstLogCluster[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 2;
-
-					//Read in file size------------------------------------------
-					assert((currentInd - startingIndex) == 28);
-					nextFile->fileSize = (unsigned char *)malloc(4 * sizeof(char));
-					for(int i = 0; i < 4; i++){
-						nextFile->fileSize[i] = rootDirectory[currentInd+i];
-					}
-					currentInd += 4;
-
-					nextFile->filepath = (char *) malloc(sizeof(char));
-					nextFile->filepath = "/";
-
-					//If file isn't a subdirectory, print it
-						//else add it
-					if(nextFile->extension[0] != ' '){
+					//If file isn't a subdirectory, print and explore it
+						//else explore subdirectory
+					if((convertEndian(nextFile->fileSize, 4)) != 0){
 						printFile(nextFile);
-						//addRootFile(nextFile);
+						//exploreFile
 					} else {
-
+						//exploreDirectory
 					}
-				} else {
-					currentInd += 32;
 				}
+				currentInd += 32;
 			}
 
 		}
@@ -266,10 +287,7 @@ int rootDirectorySize = 16;
 			return myEntries;
 		}
 
-	/* Function: getSector      */
-		uint16_t getSector(uint16_t fatEntry){
-			return (uint16_t)(33 + fatEntry - 2);
-		}
+/* Disk Utility Functions==============================================================*/
 
 	/* Function: translateDisk  */
 		void translateDisk(unsigned char *disk){
@@ -335,28 +353,6 @@ int rootDirectorySize = 16;
 			return disk;
 		}
 
-/* Removeable Debug Functions */
-	/* Check Contents           */
-		// void checkContents(){
-		// 	 printf("\n\nBoot\n");
-		// 	for(int i = 0; i < 10; i++){
-		// 		printf("%c\n", bootBlock[i]);
-		// 	}
-		// 	printf("\n\nFAT1\n");
-		// 	for(int i = 0; i < 10; i++){
-		// 		printf("%c", FAT1[i]);
-		// 	}
-
-		// 	printf("\n\nFAT2\n");
-		// 	for(int i = 0; i < 10; i++){
-		// 		printf("%c", FAT2[i]);
-		// 	}
-
-		// 	printf("\n\nData\n");
-		// 	for(int i = 0; i < 10; i++){
-		// 		printf("%c", data[i]);
-		// 	}
-		// }
 
 /* Main */
 
@@ -364,15 +360,15 @@ int rootDirectorySize = 16;
  	assert(argc == 3);
 
  	//Program Input Parameters
- 	char *diskpath = argv[1];
- 	char *destDirectory = argv[2];
+ 	char *diskpath = argv[1];			//Path of disk image
+ 	destPath = malloc(strlen(argv[2])); //Directory path for file output
+ 	destPath = argv[2];
 
  	//Get Disk
  	unsigned char *disk = getDisk(diskpath);
  	translateDisk(disk);
 
- 	getValidFiles();
- 	//printf("%c-%c-%c\n", rootDirectory[8], rootDirectory[9], rootDirectory[10]);
+ 	exploreRoot();
 
 
  	return 0;
