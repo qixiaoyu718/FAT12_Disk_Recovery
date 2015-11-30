@@ -273,17 +273,17 @@ char *destPath;
 
 	/* Function: getEntries     */
 		//Purpose: Calculates the entry values from three bytes (specific to FAT12)
-		Entries getEntries(char *firstByte, char *secondByte, char *thirdByte){
+		Entries getEntries(unsigned char *firstByte, unsigned char *secondByte, unsigned char *thirdByte){
 			Entries myEntries;
 			// Split the second byte up
-			uint16_t second = (uint16_t) strtol(secondByte, &secondByte, 16);
+			uint16_t second = (uint16_t) *secondByte;
 			uint16_t nib1 = (second >> 4); //Dest: Second
 			uint16_t nib2 = ((second & 0x0f) << 8); //Dest: First
 
 			//Place the nibs into their respective entries
-			uint16_t first = (uint16_t) strtol(firstByte, &firstByte, 16);
+			uint16_t first = (uint16_t) *firstByte;
 			myEntries.first = (nib2 | first);
-			uint16_t third = (uint16_t) strtol(thirdByte, &thirdByte, 16);
+			uint16_t third = (uint16_t) *thirdByte;
 			myEntries.second = (nib1 | (third << 4));
 
 			return myEntries;
@@ -294,8 +294,8 @@ char *destPath;
 	/* Function: translateDisk  */
 		void translateDisk(unsigned char *disk){
 			//Read the contents of the disk into the appropriate data structures
-		char FAT1[FAT_SIZE];
-		char FAT2[FAT_SIZE];
+		unsigned char FAT1[FAT_SIZE];
+		unsigned char FAT2[FAT_SIZE];
 
 			int counter = 0;
 			while(counter < MAX_BYTES){
@@ -318,9 +318,10 @@ char *destPath;
 			//Format the FATs correctly
 			int i = 0;
 			int entryInd = 0;
-			char *one = malloc(1);
-			char *two = malloc(1);
-			char *three = malloc(1);
+			unsigned char *one = malloc(1);
+			unsigned char *two = malloc(1);
+			unsigned char *three = malloc(1);
+
 			while(i+3 < FAT_SIZE){
 				*one = FAT1[i];
 				*two = FAT1[i+1];
