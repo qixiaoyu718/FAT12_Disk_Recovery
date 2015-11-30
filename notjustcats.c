@@ -1,5 +1,6 @@
 /*
  * Author :: JL Garofalo (Username: Garofal)
+ *        :: Parker Vansickle (Username: pvansic)
  * Class  :: CPSC 3220
  * Instructor :: Dr. Sorber
  * Date       :: 12-04-2015
