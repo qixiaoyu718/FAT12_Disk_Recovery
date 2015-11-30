@@ -119,7 +119,7 @@ char *destPath;
 
 /*	Exploration Functions==================================================================*/
 	/* Function: createFile    */
-		File *createFile(char *raw, char *filepath){
+		File *createFile(unsigned char *raw, char *filepath){
 			File *nextFile = malloc(sizeof(File));
 			int currentInd = 0;
 
@@ -243,7 +243,7 @@ char *destPath;
 			int currentInd = 0;
 			while((currentInd + DIR_ENTR_SIZE) <= ROOT_SIZE){
 				if(rootDirectory[currentInd] != 0x00){
-					char *rawData =(char *) malloc(DIR_ENTR_SIZE * sizeof(char));
+					unsigned char *rawData =(unsigned char *) malloc(DIR_ENTR_SIZE * sizeof(unsigned char));
 					for(int i = 0; i <  DIR_ENTR_SIZE; i++){
 						rawData[i] = rootDirectory[currentInd];
 						currentInd++;
@@ -263,8 +263,9 @@ char *destPath;
 					} else {
 						//exploreDirectory
 					}
+				} else {
+					currentInd += 32;
 				}
-				currentInd += 32;
 			}
 
 		}
