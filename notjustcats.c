@@ -252,7 +252,7 @@ int fileNumber = 0;
 			char temp[8];
 			char extension[4];
 			unsigned int lastSectorFlag = 0;  // Flag for indicating if we are in the last sector of the file, set to 1 for yes
-			unsigned int sectorIndex;
+			unsigned int sectorIndex, bytesWritten = 0;
 
 			// Give path for filename, and extract extension
 			strcpy(filename, destPath);
@@ -277,18 +277,27 @@ int fileNumber = 0;
     				unsigned int ui;
 			} u;
 
+			union {
+   				char tempNum2[16];
+    				unsigned int filesize;
+			} u2;
+
 			strncpy(u.tempNum, (char *)file->firstLogCluster, 2);
 			for (i=2; i<=16; i++)
 				u.tempNum[i] = '\0';
+
+			strncpy(u2.tempNum2, (char *)file->fileSize, 4);
+			for (i=4; i<=16; i++)
+				u2.tempNum2[i] = '\0';
 
 			// Move to proper index of data array to begin writing bytes to output file and extract to buffer
 			sectorIndex = u.ui;
 			unsigned int dataIndex = (sectorIndex - 2) * SECTOR_SIZE;
 			do {
 				i = 0;
-				while (i < SECTOR_SIZE){
+				while (i < SECTOR_SIZE && bytesWritten < u2.filesize){
 					fprintf(outputFile, "%c", data[dataIndex + i]);
-					i++;
+					i++; bytesWritten++;
 				}
 				// Find the next sector from the FAT
 				if (*fat1[sectorIndex] >= 0xFF0 || *fat1[sectorIndex] == 0x0)
