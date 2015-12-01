@@ -36,6 +36,16 @@
 	#define FAT2_LOC (SECTOR_SIZE + FAT_SIZE)
 	#define ROOT_LOC (SECTOR_SIZE + (FAT_SIZE * 2))
 
+ //Fat Constants
+ 	#define FREE_CLUSTER 0x000
+ 	#define IN_USE_MIN 0x002
+ 	#define IN_USE_MAX 0xfef
+ 	#define RESERVED_MIN 0xff0
+ 	#define RESERVED_MAX 0xff6
+ 	#define BAD_CLUSTER 0xff7
+ 	#define LAST_MIN 0xff8
+ 	#define LAST_MAX 0xfff
+
 /* Struct to hold two entries */
 typedef struct Entries{
 	uint16_t first;
@@ -72,8 +82,8 @@ int fileNumber = 0;
 /* Helper Functions======================================================================*/
 
 	/* Function: getSector      */
-		uint16_t getSector(uint16_t fatEntry){
-			return (uint16_t)(33 + fatEntry - 2);
+		uint16_t getSectorIndex(uint16_t fatEntry){
+			return (uint16_t)(fatEntry - 2);
 		}
 
 	/* Function: convertEndian */
@@ -99,11 +109,19 @@ int fileNumber = 0;
 				printf("DELETED\t");
 			}
 			assert(file->filepath != NULL);
-			printf("%s", file->filepath);
 			int i = 0;
-			while(file->filename[i] != ' ' && file->filename[i] != '.' && i < 8){
-				printf("%c", file->filename[i]);
+			while(i < strlen(file->filepath)){
+				if(file->filepath[i] != ' ' && file->filepath[i] != '.') printf("%c", file->filepath[i]);
 				i++;
+			}
+			if(!file->isValid){
+				printf("_");
+			} else {
+				i = 0;
+				while(file->filename[i] != ' ' && file->filename[i] != '.' && i < 8){
+					printf("%c", file->filename[i]);
+					i++;
+				}
 			}
 			printf(".");
 			assert(file->extension != NULL);
@@ -132,7 +150,7 @@ int fileNumber = 0;
 				nextFile->isValid = 0;
 			}
 
-			//Read in filename-------------------------------------------
+			//Read in filename-------------------------------------------------
 			assert(currentInd == 0);
 			nextFile->filename = (unsigned char *)malloc(8 * sizeof(char));
 			for(int i = 0; i < 8; i++){
@@ -140,7 +158,7 @@ int fileNumber = 0;
 			}
 			currentInd += 8;
 
-			//Read in extension------------------------------------------
+			//Read in extension-------------------------------------------------
 			assert(currentInd == 8);
 			nextFile->extension = (unsigned char *)malloc(3 * sizeof(char));
 			for(int i = 0; i < 3; i++){
@@ -148,13 +166,13 @@ int fileNumber = 0;
 			}
 			currentInd += 3;
 
-			//Read in attributes-----------------------------------------
+			//Read in attributes------------------------------------------------
 			assert(currentInd == 11);
 			nextFile->attributes = (unsigned char *)malloc(1 * sizeof(char));
 			nextFile->attributes[0] = raw[currentInd];
 			currentInd++;
 
-			//Read in reserved-------------------------------------------
+			//Read in reserved--------------------------------------------------
 			assert(currentInd == 12);
 			nextFile->reserved = (unsigned char *)malloc(2 * sizeof(char));
 			for(int i = 0; i < 2; i++){
@@ -162,7 +180,7 @@ int fileNumber = 0;
 			}
 			currentInd += 2;
 
-			//Read in creationTime---------------------------------------
+			//Read in creationTime-----------------------------------------------
 			assert(currentInd  == 14);
 			nextFile->creationTime = (unsigned char *)malloc(2 * sizeof(char));
 			for(int i = 0; i < 2; i++){
@@ -170,7 +188,7 @@ int fileNumber = 0;
 			}
 			currentInd += 2;
 
-			//Read in creationDate---------------------------------------
+			//Read in creationDate-----------------------------------------------
 			assert(currentInd == 16);
 			nextFile->creationDate = (unsigned char *)malloc(2 * sizeof(char));
 			for(int i = 0; i < 2; i++){
@@ -178,7 +196,7 @@ int fileNumber = 0;
 			}
 			currentInd += 2;
 
-			//Read in lastAccessed info----------------------------------
+			//Read in lastAccessed info------------------------------------------
 			assert(currentInd == 18);
 			nextFile->lastAccessed = (unsigned char *)malloc(2 * sizeof(char));
 			for(int i = 0; i < 2; i++){
@@ -186,7 +204,7 @@ int fileNumber = 0;
 			}
 			currentInd += 4;
 
-			//Read in lastModified Time----------------------------------
+			//Read in lastModified Time------------------------------------------
 			assert(currentInd == 22);
 			nextFile->lastModTime = (unsigned char *)malloc(2 * sizeof(char));
 			for(int i = 0; i < 2; i++){
@@ -285,8 +303,61 @@ int fileNumber = 0;
 	/* Function: exploreDirectory */
 		//Purpose: Explores a subdirectory for files contained within
 		void exploreDirectory(File *file){
+			uint16_t clusterPath[17];
+			clusterPath[0] = (uint16_t)(convertEndian(file->firstLogCluster, 2));
+			int i = 0;
+			while(i < 16){
+				if(*(fat1[clusterPath[i]]) == 0x00){
+					break;
+				} else if(*(fat1[clusterPath[i]]) == *fat1[2]){
+					i++;
+					break;
+				} else {
+					clusterPath[i+1] = *(fat1[clusterPath[i]]);
+					i++;
+				}
+			}
 
+			int z = 0;
+			while(z < i){
+				int sectorIndex = ((clusterPath[z]-2)* SECTOR_SIZE);
+				int currentIndex = 64;
+
+				while((currentIndex + DIR_ENTR_SIZE) <= SECTOR_SIZE){
+					if(data[sectorIndex+currentIndex] != FREE_CLUSTER){
+						unsigned char *rawData = (unsigned char *) malloc(DIR_ENTR_SIZE * sizeof(unsigned char));
+
+						for(int x = 0; x < DIR_ENTR_SIZE; x++){
+							rawData[x] = data[sectorIndex+currentIndex];
+							currentIndex++;
+						}
+
+						char *newfilepath = (char *) malloc(sizeof(strlen(file->filepath) + strlen((char *)file->filename) + 1));
+						strncpy(newfilepath, file->filepath, strlen(file->filepath));
+						strcat(newfilepath, (char *) file->filename);
+						strcat(newfilepath, "/");
+
+						File *newFile = createFile(rawData, newfilepath);
+						assert(newFile != NULL);
+						free(rawData);
+
+						if((convertEndian(newFile->fileSize, 4)) != 0){
+							printFile(newFile);
+							exploreFile(newFile);
+						} else {
+
+							exploreDirectory(newFile);
+						}
+					} else {
+						currentIndex += 32;
+					}
+				}
+				
+				z++;
+			}
 		}
+
+
 
 	/* Function: exploreRoot  */
 		void exploreRoot(){
@@ -294,7 +365,7 @@ int fileNumber = 0;
 
 			int currentInd = 0;
 			while((currentInd + DIR_ENTR_SIZE) <= ROOT_SIZE){
-				if(rootDirectory[currentInd] != 0x00){
+				if(rootDirectory[currentInd] != FREE_CLUSTER){
 					unsigned char *rawData =(unsigned char *) malloc(DIR_ENTR_SIZE * sizeof(unsigned char));
 					for(int i = 0; i <  DIR_ENTR_SIZE; i++){
 						rawData[i] = rootDirectory[currentInd];
@@ -313,7 +384,7 @@ int fileNumber = 0;
 						printFile(nextFile);
 						exploreFile(nextFile);
 					} else {
-						//exploreDirectory
+						exploreDirectory(nextFile);
 					}
 				} else {
 					currentInd += 32;
