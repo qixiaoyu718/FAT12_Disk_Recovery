@@ -294,8 +294,8 @@ char *destPath;
 	/* Function: translateDisk  */
 		void translateDisk(unsigned char *disk){
 			//Read the contents of the disk into the appropriate data structures
-		unsigned char FAT1[FAT_SIZE];
-		unsigned char FAT2[FAT_SIZE];
+			unsigned char FAT1[FAT_SIZE];
+			unsigned char FAT2[FAT_SIZE];
 
 			int counter = 0;
 			while(counter < MAX_BYTES){
