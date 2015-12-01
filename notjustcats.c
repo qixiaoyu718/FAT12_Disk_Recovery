@@ -26,6 +26,7 @@
 	#define DATA_SIZE (512 * 2847)
 	#define MAX_BYTES (512 * 2879)
  	#define DIR_ENTR_SIZE 32
+	#define MAX_PATH 256
  	//File System Components
  	#define SECTOR_DIRECTORIES 16
  	#define FAT_ENTRIES ((FAT_SIZE * (2/3)) + 1)
@@ -65,7 +66,7 @@ unsigned char rootDirectory[ROOT_SIZE];
 unsigned char data[DATA_SIZE];
 
 char *destPath;
-
+int fileNumber = 0;
 
 
 /* Helper Functions======================================================================*/
@@ -228,7 +229,57 @@ char *destPath;
 	/* Function: exploreFile   */
 		//Purpose: Finds the file's contents and saves it to the user's specified directory
 		void exploreFile(File *file){
+			// Declare variables for storing filename information, indices, and flags
+			char filename[MAX_PATH];
+			char temp[8];
+			char extension[4];
+			unsigned int lastSectorFlag = 0;  // Flag for indicating if we are in the last sector of the file, set to 1 for yes
+			unsigned int sectorIndex;
 
+			// Give path for filename, and extract extension
+			strcpy(filename, destPath);
+			sprintf(temp, "%d.", fileNumber);
+			memcpy(&filename[strlen(destPath)], "/file", 5);
+			memcpy(&filename[strlen(destPath)+5], temp, strlen(temp));
+
+			int i = 0;
+			while(file->extension[i] != '.' && i < 3){
+				extension[i] = file->extension[i];
+				i++;
+			}
+			extension[i] = '\0';
+			memcpy(&filename[strlen(destPath)+strlen(temp)+5], extension, 4);
+
+			// Open a new file for writing with the extracted filename
+			FILE * outputFile = fopen(filename, "wb");
+			assert(outputFile != NULL);
+
+			union {
+   				char tempNum[16];
+    				unsigned int ui;
+			} u;
+
+			strncpy(u.tempNum, (char *)file->firstLogCluster, 2);
+			for (i=2; i<=16; i++)
+				u.tempNum[i] = '\0';
+
+			// Move to proper index of data array to begin writing bytes to output file and extract to buffer
+			sectorIndex = u.ui;
+			unsigned int dataIndex = (sectorIndex - 2) * SECTOR_SIZE;
+			do {
+				i = 0;
+				while (i < SECTOR_SIZE){
+					fprintf(outputFile, "%c", data[dataIndex + i]);
+					i++;
+				}
+				// Find the next sector from the FAT
+				if (*fat1[sectorIndex] >= 0xFF0 || *fat1[sectorIndex] == 0x0)
+					lastSectorFlag = 1;
+				sectorIndex = *fat1[sectorIndex];
+				dataIndex = (sectorIndex - 2) * SECTOR_SIZE;
+			} while (lastSectorFlag == 0);
+			fclose(outputFile);
+			fileNumber++;
 		}
 
 	/* Function: exploreDirectory */
@@ -260,7 +311,7 @@ char *destPath;
 						//else explore subdirectory
 					if((convertEndian(nextFile->fileSize, 4)) != 0){
 						printFile(nextFile);
-						//exploreFile
+						exploreFile(nextFile);
 					} else {
 						//exploreDirectory
 					}
@@ -366,6 +417,7 @@ char *destPath;
  	char *diskpath = argv[1];			//Path of disk image
  	destPath = malloc(strlen(argv[2])); //Directory path for file output
  	destPath = argv[2];
+	mkdir(destPath, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
  	//Get Disk
  	unsigned char *disk = getDisk(diskpath);
