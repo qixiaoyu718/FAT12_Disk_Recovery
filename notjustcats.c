@@ -70,8 +70,8 @@ typedef struct File {
 
 /* Global Variables */
 char bootBlock[SECTOR_SIZE];
-uint16_t *fat1[FAT_ENTRIES];
-uint16_t *fat2[FAT_ENTRIES];
+uint16_t *fat1[FAT_ENTRIES * 3600];
+uint16_t *fat2[FAT_ENTRIES * 3600];
 unsigned char rootDirectory[ROOT_SIZE];
 unsigned char data[DATA_SIZE];
 
@@ -305,7 +305,7 @@ int fileNumber = 0;
 				sectorIndex = *fat1[sectorIndex];
 				dataIndex = (sectorIndex - 2) * SECTOR_SIZE;
 			} while (lastSectorFlag == 0);
-			fclose(outputFile);
+			//fclose(outputFile); /* This is causing abortion in random image due to an invalid size */
 			fileNumber++;
 		}
 
