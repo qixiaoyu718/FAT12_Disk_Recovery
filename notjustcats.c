@@ -426,7 +426,7 @@ int fileNumber = 0;
 		void translateDisk(unsigned char *disk){
 			//Read the contents of the disk into the appropriate data structures
 			unsigned char FAT1[FAT_SIZE];
-			unsigned char FAT2[FAT_SIZE];
+			//unsigned char FAT2[FAT_SIZE];
 
 			int counter = 0;
 			while(counter < MAX_BYTES){
@@ -437,7 +437,7 @@ int fileNumber = 0;
 				} else if(counter < FAT2_LOC) {
 					FAT1[counter-SECTOR_SIZE] = nextByte;
 				} else if(counter < ROOT_LOC){
-					FAT2[counter-FAT2_LOC] = nextByte;
+					//FAT2[counter-FAT2_LOC] = nextByte;
 				} else if(counter < DATA_LOC){
 					rootDirectory[counter-ROOT_LOC] = nextByte;
 				} else {

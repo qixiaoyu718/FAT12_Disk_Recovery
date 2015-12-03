@@ -9,4 +9,4 @@ notjustcats: notjustcats.c
 
 
 clean:
-	rm -rf  $(BINS) *.o temp $(objects)
+	rm -rf  $(BINS) *.o temp output2 output3 output1 $(objects)
