@@ -116,13 +116,15 @@ int fileNumber = 0;
 			}
 			if(!file->isValid){
 				printf("_");
+				i = 1;
 			} else {
 				i = 0;
+			}
 				while(file->filename[i] != ' ' && file->filename[i] != '.' && i < 8){
 					printf("%c", file->filename[i]);
 					i++;
 				}
-			}
+			
 			printf(".");
 			assert(file->extension != NULL);
 			i = 0;
@@ -450,9 +452,9 @@ int fileNumber = 0;
 			//Format the FATs correctly
 			int i = 0;
 			int entryInd = 0;
-			unsigned char *one = malloc(1);
-			unsigned char *two = malloc(1);
-			unsigned char *three = malloc(1);
+			unsigned char *one = (unsigned char *) malloc(sizeof(unsigned char));
+			unsigned char *two = (unsigned char *) malloc(sizeof(unsigned char));
+			unsigned char *three = (unsigned char *) malloc(sizeof(unsigned char));
 
 			while(i+3 < FAT_SIZE){
 				*one = FAT1[i];
@@ -460,8 +462,8 @@ int fileNumber = 0;
 				*three = FAT1[i+2];
 
 				Entries e = getEntries(one, two, three);
-				fat1[entryInd] = malloc(sizeof(uint16_t));
-				fat1[entryInd+1] = malloc(sizeof(uint16_t));
+				fat1[entryInd] = (uint16_t *) malloc(sizeof(uint16_t));
+				fat1[entryInd+1] = (uint16_t *) malloc(sizeof(uint16_t));
 				*fat1[entryInd] = e.first;
 				*fat1[entryInd+1] = e.second;
 
