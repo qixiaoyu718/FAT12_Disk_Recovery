@@ -340,8 +340,9 @@ int fileNumber = 0;
 							rawData[x] = data[sectorIndex+currentIndex];
 							currentIndex++;
 						}
+						int tempsize = strlen(file->filepath) + strlen((char *) file->filename) + 1;
 
-						char *newfilepath = (char *) malloc(sizeof(strlen(file->filepath) + strlen((char *)file->filename) + 1));
+						char *newfilepath = (char *) malloc(tempsize * sizeof(char));
 						strncpy(newfilepath, file->filepath, strlen(file->filepath));
 						strcat(newfilepath, (char *) file->filename);
 						strcat(newfilepath, "/");
