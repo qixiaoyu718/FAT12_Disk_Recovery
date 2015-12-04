@@ -364,7 +364,6 @@ int fileNumber = 0;
 						currentIndex += 32;
 					}
 				}
-				
 				z++;
 			}
 		}
