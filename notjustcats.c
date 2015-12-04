@@ -295,6 +295,8 @@ int fileNumber = 0;
 			// Move to proper index of data array to begin writing bytes to output file and extract to buffer
 			sectorIndex = u.ui;
 			unsigned int dataIndex = (sectorIndex - 2) * SECTOR_SIZE;
+			if (sectorIndex >= 0xFF0 || sectorIndex == 0)
+				goto loopskip;
 			do {
 				i = 0;
 				while (i < SECTOR_SIZE && bytesWritten < u2.filesize){
@@ -307,7 +309,9 @@ int fileNumber = 0;
 				sectorIndex = *fat1[sectorIndex];
 				dataIndex = (sectorIndex - 2) * SECTOR_SIZE;
 			} while (lastSectorFlag == 0);
-			//fclose(outputFile); /* This is causing abortion in random image due to an invalid size */
+
+			loopskip: // Use this for special case of bad initial logical cluster
+			fclose(outputFile); /* This is causing abortion in random image due to an invalid size */
 			fileNumber++;
 		}
 
