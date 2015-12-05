@@ -73,6 +73,10 @@ Design:
 		*	Returns to Sequence Step 4 or 7
 
 	7.	exploreFile(struct File *file)
+		*	Extracts the extension information from file and creates string with full path to save output
+		*	Opens a new file for writing
+		*	Determines first logical cluster and moves to appropriate index of global data array
+		*	Uses FAT array for subsequent clusters, writes data out byte by byte to new file
 
 	8.	exploreDirectory(struct File *file)
 		*	Converts the directory's first logical cluster to Big Endian
