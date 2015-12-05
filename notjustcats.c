@@ -295,7 +295,7 @@ int fileNumber = 0;
 			// Move to proper index of data array to begin writing bytes to output file and extract to buffer
 			sectorIndex = u.ui;
 			unsigned int dataIndex = (sectorIndex - 2) * SECTOR_SIZE;
-			if (sectorIndex >= 0xFF0 || sectorIndex == 0)
+			if ((sectorIndex >= 0xFF0 && sectorIndex <= 0xFF7) || sectorIndex == 0)
 				goto loopskip;
 			do {
 				i = 0;
