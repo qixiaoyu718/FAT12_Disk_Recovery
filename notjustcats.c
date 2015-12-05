@@ -324,7 +324,7 @@
 			while(i < 16){
 				if(*(fat1[clusterPath[i]]) == 0x00){
 					break;
-				} else if(*(fat1[clusterPath[i]]) => LAST_MIN || 
+				} else if(*(fat1[clusterPath[i]]) >= LAST_MIN || 
 						  *(fat1[clusterPath[i]]) <= LAST_MAX){
 					i++;
 					break;
