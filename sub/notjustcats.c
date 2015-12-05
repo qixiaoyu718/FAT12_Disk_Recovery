@@ -47,36 +47,36 @@
  	#define LAST_MAX 0xfff
 
 /* Struct to hold two entries */
-	typedef struct Entries{
-		uint16_t first;
-		uint16_t second;
-	} Entries;
+typedef struct Entries{
+	uint16_t first;
+	uint16_t second;
+} Entries;
 
-	typedef struct File {
-		unsigned char *filename;
-		unsigned char *extension;
-		unsigned char *attributes;
-		unsigned char *reserved;
-		unsigned char *creationTime;
-		unsigned char *creationDate;
-		unsigned char *lastAccessed;
-		unsigned char *lastModTime;
-		unsigned char *lastModDate;
-		unsigned char *firstLogCluster; 
-		unsigned char *fileSize; 		//(in Bytes)
-		char *filepath;
-		int isValid;
-	} File;
+typedef struct File {
+	unsigned char *filename;
+	unsigned char *extension;
+	unsigned char *attributes;
+	unsigned char *reserved;
+	unsigned char *creationTime;
+	unsigned char *creationDate;
+	unsigned char *lastAccessed;
+	unsigned char *lastModTime;
+	unsigned char *lastModDate;
+	unsigned char *firstLogCluster; 
+	unsigned char *fileSize; 		//(in Bytes)
+	char *filepath;
+	int isValid;
+} File;
 
 /* Global Variables */
-	char bootBlock[SECTOR_SIZE];
-	uint16_t *fat1[FAT_ENTRIES * 3600];
-	uint16_t *fat2[FAT_ENTRIES * 3600];
-	unsigned char rootDirectory[ROOT_SIZE];
-	unsigned char data[DATA_SIZE];
+char bootBlock[SECTOR_SIZE];
+uint16_t *fat1[FAT_ENTRIES * 3600];
+uint16_t *fat2[FAT_ENTRIES * 3600];
+unsigned char rootDirectory[ROOT_SIZE];
+unsigned char data[DATA_SIZE];
 
-	char *destPath;
-	int fileNumber = 0;
+char *destPath;
+int fileNumber = 0;
 
 
 /* Helper Functions======================================================================*/
@@ -318,18 +318,16 @@
 	/* Function: exploreDirectory */
 		//Purpose: Explores a subdirectory for files contained within
 		void exploreDirectory(File *file){
-			uint16_t clusterPath[16];
+			uint16_t clusterPath[17];
 			clusterPath[0] = (uint16_t)(convertEndian(file->firstLogCluster, 2));
 			int i = 0;
 			while(i < 16){
 				if(*(fat1[clusterPath[i]]) == 0x00){
 					break;
-				} else if(*(fat1[clusterPath[i]]) => LAST_MIN || 
-						  *(fat1[clusterPath[i]]) <= LAST_MAX){
+				} else if(*(fat1[clusterPath[i]]) == *fat1[2]){
 					i++;
 					break;
-				} else if(*fat1[clusterPath[i]] <= IN_USE_MAX && 
-						  *fat1[clusterPath[i]] >= IN_USE_MIN ){
+				} else {
 					clusterPath[i+1] = *(fat1[clusterPath[i]]);
 					i++;
 				}
