@@ -335,6 +335,14 @@
 				}
 			}
 
+			//Get new filepath
+			int tempsize = strlen(file->filepath) + strlen((char *) file->filename) + 1;
+			char *newfilepath = (char *) malloc(tempsize * sizeof(char));
+			memset(newfilepath, 0, (tempsize * sizeof(char)));
+			strcpy(newfilepath, file->filepath);
+			strcat(newfilepath, (char *) file->filename);
+			strcat(newfilepath, "/");
+
 			int z = 0;
 			while(z < i){
 				int sectorIndex = ((clusterPath[z]-2)* SECTOR_SIZE);
@@ -348,12 +356,6 @@
 							rawData[x] = data[sectorIndex+currentIndex];
 							currentIndex++;
 						}
-						int tempsize = strlen(file->filepath) + strlen((char *) file->filename) + 1;
-
-						char *newfilepath = (char *) malloc(tempsize * sizeof(char));
-						strncpy(newfilepath, file->filepath, strlen(file->filepath));
-						strcat(newfilepath, (char *) file->filename);
-						strcat(newfilepath, "/");
 
 						File *newFile = createFile(rawData, newfilepath);
 						assert(newFile != NULL);
