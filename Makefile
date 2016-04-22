@@ -1,11 +1,11 @@
 CC=gcc
 CFLAGS= -std=gnu99 -Wall -g -o
 
-OBJ= notjustcats
+OBJ= Fat12Recovery
 
 
-notjustcats: notjustcats.c
-	$(CC) $(CFLAGS) notjustcats $^
+Fat12Recovery: Fat12Recovery.c
+	$(CC) $(CFLAGS) Fat12Recovery $^
 
 
 clean:
