@@ -1,7 +1,7 @@
 #!/bin/bash
 clear
-./notjustcats test/test.img ./output1
+./Fat12Recovery test/test.img ./output1
 echo -ne '\n'
-./notjustcats test/test2.img ./output2
+./Fat12Recovery test/test2.img ./output2
 echo -ne '\n'
-./notjustcats test/test3.img ./output3
+./Fat12Recovery test/test3.img ./output3
